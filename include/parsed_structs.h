@@ -27,14 +27,14 @@ namespace explore {
 		int32_t mx;
 		int32_t my;
 		int32_t mz;
-		constexpr size_t size()const { return 9; }
+		constexpr size_t size()const { return sizeof(acc_sample); }
 	};
 
 	struct sens_sample {
 		int32_t temperature;
 		uint32_t light;
 		uint32_t battery;
-		constexpr size_t size()const { return 5; }
+		constexpr size_t size()const { return sizeof(sens_sample); }
 	};
 
 	typedef std::vector<eeg_sample<4>> eeg4_array;

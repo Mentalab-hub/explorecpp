@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.2)
 project(samples)
 
 IF(WIN32)
+	ADD_DEFINITIONS("/EHsc")
 	set(Boost_USE_STATIC_LIBS        ON)	
 ENDIF()	
 set(Boost_USE_MULTITHREADED      ON)

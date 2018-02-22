@@ -55,7 +55,7 @@ namespace explore {
 	// simple skeleton sample forward class template
 	class forward_skeleton {
 	public:
-		void on_error(std::string &&err) {}
+		void on_error(const std::string &err) {}
 		void on_sens(sens_packet &&data) {}
 		void on_eeg4(eeg4_packet &&data) {}
 		void on_eeg8(eeg8_packet &&data) {}
