@@ -10,59 +10,63 @@
 namespace explore {
 
 #pragma pack(push,1)
-	template<size_t _Size>
-	struct eeg_sample {
-		int32_t status;
-		std::array<int32_t,_Size> data;
-		constexpr size_t size()const { return data.size(); }
+
+	template<typename _Array>
+	struct packet_base {
+		uint32_t timestamp;
+		_Array data;
+
+		static constexpr size_t size() { return std::tuple_size<_Array>::value; }
 	};
 
 	struct acc_sample {
-		int32_t ax;
-		int32_t ay;
-		int32_t az;
-		int32_t wx;
-		int32_t wy;
-		int32_t wz;
-		int32_t mx;
-		int32_t my;
-		int32_t mz;
-		constexpr size_t size()const { return sizeof(acc_sample); }
+		union {
+			struct {
+				int32_t ax;
+				int32_t ay;
+				int32_t az;
+				int32_t wx;
+				int32_t wy;
+				int32_t wz;
+				int32_t mx;
+				int32_t my;
+				int32_t mz;
+			};
+			std::array<int32_t, 9> values;
+		};
 	};
+
+	typedef std::array<acc_sample, 1> acc_array;
+	typedef packet_base<acc_array> acc_packet;
 
 	struct sens_sample {
 		int32_t temperature;
 		uint32_t light;
 		uint32_t battery;
-		constexpr size_t size()const { return sizeof(sens_sample); }
 	};
 
-	typedef std::vector<eeg_sample<4>> eeg4_array;
-	typedef std::vector<eeg_sample<8>> eeg8_array;
-	typedef std::vector<acc_sample> acc_array;
-	typedef std::vector<sens_sample> sens_array;
+	typedef std::array<sens_sample, 1> sens_array;
+	typedef packet_base<sens_array> sens_packet;
 
+	template<size_t _Channels>
+	struct eeg_sample {
+		int32_t status;
+		std::array<int32_t, _Channels> data;
 
-	struct sens_packet {
-		uint32_t timestamp;
-		sens_array data;
+		static constexpr size_t channels() { return _Channels; }
 	};
 
-	struct acc_packet {
-		uint32_t timestamp;
-		acc_array data;
+#define EEG_PACKET_SIZE 128
+
+	template<size_t _Channels, size_t _Size = EEG_PACKET_SIZE / _Channels>
+	struct eeg_base : public packet_base<std::array<eeg_sample<_Channels>, _Size>> {
+		typedef eeg_sample<_Channels> sample_type;
+
+		static constexpr size_t channels() { return sample_type::channels(); }
 	};
 
-	struct eeg4_packet {
-		uint32_t timestamp;
-		eeg4_array data;
-	};
-
-	struct eeg8_packet {
-		uint32_t timestamp;
-		eeg8_array data;
-	};
-
+	typedef eeg_base<4> eeg4_packet;
+	typedef eeg_base<8> eeg8_packet;
 
 #pragma pack(pop)
 }

@@ -27,15 +27,14 @@ namespace explore {
 		public:
 			explicit socket_base(boost::asio::io_service &io) :ser_(io) {}
 
-			bool is_open() { return ser_.is_open(); }
+			bool is_open()const { return ser_.is_open(); }
 
 			void close(boost::system::error_code &err) { ser_.close(err); }
 
 			void cancel(boost::system::error_code &err) { ser_.cancel(); }
 
 			_Socket &socket() { return ser_; }
-			_Socket &operator()() { return socket(); }
-			
+			_Socket &operator()() { return socket(); }	
 		};
 
 		class serial_base : public socket_base<boost::asio::serial_port>{
@@ -71,8 +70,8 @@ namespace explore {
 
 			boost::asio::streambuf buf_;
 
-			std::atomic<int32_t> read_timeout_{ 5 };
-			std::atomic<int32_t> write_timeout_{ 5 };
+			const int32_t read_timeout_ = 5;
+			const int32_t write_timeout_ = 5;
 			std::atomic<bool> brun{ false };
 
 			std::future<void> fut_;
@@ -101,6 +100,11 @@ namespace explore {
 
 			// stop & cancel everything, discard serial connection
 			void close() {
+				io_.stop();
+				io_.reset();
+
+				timer_.cancel(); // cancel timer
+				timer_.expires_from_now(boost::posix_time::seconds(0));
 				{
 					std::lock_guard<std::mutex> lock(mut);
 					if(ser_){
@@ -111,14 +115,9 @@ namespace explore {
 						ser_.reset();
 					}
 				}
-				io_.stop();
-				io_.reset();
 
 				bhead_ = true;
 				buf_.consume(buf_.size());
-
-				timer_.cancel(); // cancel timer
-				timer_.expires_from_now(boost::posix_time::seconds(0));
 			}
 
 			// deadline timer for timeouts
@@ -134,9 +133,9 @@ namespace explore {
 			}
 
 			void read_data() {
-				if(!ser_)return;
 				std::lock_guard<std::mutex> lock(mut);
-				timer_.expires_from_now(boost::posix_time::seconds(read_timeout()));
+				if(!ser_)return;
+				timer_.expires_from_now(boost::posix_time::seconds(read_timeout_));
 				boost::asio::async_read(ser_->socket(), buf_, boost::asio::transfer_exactly(amount()),
 				    [this](const boost::system::error_code &err, const size_t bt)->void {this->read_data_cb(err, bt); });
 			}
@@ -150,7 +149,7 @@ namespace explore {
 				if (bhead_ && _Offset >= 0) {
 					bhead_ = false;
 					const uint8_t *ptr = boost::asio::buffer_cast<const uint8_t*>(buf_.data());
-					const int32_t end = *((_OffsetType*)(ptr + _Offset));
+					const int32_t &end = *reinterpret_cast<const _OffsetType*>(ptr + _Offset);
 					if (end < 0 || end > _Maxsize)
 						throw std::runtime_error{ "maxsize limit exceeded" };
 					amount_ = end;
@@ -162,7 +161,7 @@ namespace explore {
 					bhead_ = true;
 					p_.parse_packet(std::move(_buf));
 				}
-				this->read_data();
+				io_.post([this]()->void {this->read_data(); });
 			}
 
 			template<typename _Buffer>
@@ -182,7 +181,7 @@ namespace explore {
 			}
 			io_base(std::string device, _Parser &&p) = delete;
 
-			~io_base(){ io_.stop(); }
+			~io_base(){ io_.stop(); if (fut_.valid())fut_.wait(); }
 
 			_Parser &parser() { return p_; }
 
@@ -198,9 +197,6 @@ namespace explore {
 			}
 
 			bool is_running()const noexcept { return brun; }
-
-			int32_t read_timeout()const noexcept { return read_timeout_; }
-			void read_timeout(const int32_t timeout) noexcept { read_timeout_ = timeout; }
 
 			void start() {
 				if(is_running())return;
@@ -224,6 +220,7 @@ namespace explore {
 							if (brun) std::this_thread::sleep_for(std::chrono::milliseconds(500));
 						}
 					}
+					stop();
 				});
 			}
 
@@ -254,10 +251,6 @@ namespace explore {
 		// get and set device string
 		const std::string &device()const noexcept { return  _impl.device(); }
 		void device(const std::string &dev) { _impl.device(dev); }
-
-		// read timeout
-		int32_t read_timeout()const noexcept { return _impl.read_timeout(); }
-		void read_timeout(const int32_t timeout) noexcept { _impl.read_timeout(timeout); }
 
 		void start() { _impl.start(); }
 		void stop() { _impl.stop(); }

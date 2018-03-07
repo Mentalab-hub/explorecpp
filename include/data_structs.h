@@ -22,7 +22,7 @@ struct int24_t {
 			(0xff << 24) | (_v[2] << 16) | (_v[1] << 8) | _v[0] :
 			(_v[2] << 16) | (_v[1] << 8) | _v[0];
 	}
-	int32_t value()const { return (int32_t)*this; }
+	int32_t value()const { return (int32_t)*_v; }
 };
 
 // header type
@@ -61,8 +61,8 @@ typedef union
 {
 	raw_eeg_sample4 eeg_samples4[32];
 	raw_eeg_sample8 eeg_samples8[16];
-	raw_acc_sample acc_samples[12];
-	raw_sens_sample sens_samples[6];
+	raw_acc_sample acc_samples[1];
+	raw_sens_sample sens_samples[1];
 } data_union;
 
 // packet definition
