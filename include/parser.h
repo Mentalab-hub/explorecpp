@@ -19,9 +19,14 @@ namespace explore {
 
 		void forward_error(std::string &&ex) { forward_.on_error(std::forward<std::string>(ex)); }
 
-		void parse_packet(buffer_pointer &&buf) {
+		void forward_connect(bool &&state) { forward_.on_connect(std::move(state)); }
+
+		bool parse_packet(buffer_pointer &&buf) {
 			const eeg_packet *ptr = reinterpret_cast<const eeg_packet*>(buf->data());
 			const size_t datasize = buf->size()-sizeof(eeg_header)-sizeof(eeg_packet::timestamp)-4;
+
+			float vref = 4.5f;
+
 			switch (ptr->head.id)
 			{
 			case 0x13:
@@ -53,21 +58,27 @@ namespace explore {
 				forward_.on_acc(std::move(acc));
 				break;
 			}
-			case 0x8e:
+			case 0x90:
+				vref = 2.4f;
+			case 0x1e:
 			{
 				const size_t nsamples = datasize / sizeof(raw_eeg_sample4);
 				if (eeg4_packet::size() != nsamples) { forward_error("packet size mismatch"); break; }
 				eeg4_packet eeg;
+				eeg.vref = vref;
 				eeg.timestamp = ptr->timestamp;
 				parse_eeg_packet(eeg, ptr->_data.eeg_samples4);
 				forward_.on_eeg4(std::move(eeg));
 				break;
 			}
 			case 0x92:
+				vref = 2.4f;
+			case 0x3e:
 			{
 				const size_t nsamples = datasize / sizeof(raw_eeg_sample8);
 				if (eeg8_packet::size() != nsamples) { forward_error("packet size mismatch"); break; }
 				eeg8_packet eeg;
+				eeg.vref = vref;
 				eeg.timestamp = ptr->timestamp;
 				parse_eeg_packet(eeg, ptr->_data.eeg_samples8);
 				forward_.on_eeg8(std::move(eeg));
@@ -80,6 +91,7 @@ namespace explore {
 				forward_error("unknown packet id ");
 				break;
 			}
+			return true;
 		}
 
 	private:

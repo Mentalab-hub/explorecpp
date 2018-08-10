@@ -42,11 +42,11 @@ public:
 
 int main(int argc, char *argv[])
 {
-	if (argc < 1) {
+	if (argc < 2) {
 		std::cout << "usage: <executable> <comdevice>";
 		return 0;
 	}	
-	example e(argv[0]);
+	example e(argv[1]);
 
 	e.start();
 

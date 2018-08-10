@@ -1,5 +1,5 @@
 # libexplorecpp
-Simlpe Sample C++ library to talk to Mentalab biosignal aquisition devices 
+Simple Sample C++ library to talk to Mentalab biosignal aquisition devices 
 
 
 ## Prequesites:
@@ -9,6 +9,16 @@ GCC 4.9.1 or higher (using --std=c++1y )
 Microsoft Visual Studio 2015 or highter
 
 Boost C++ Libraries http://www.boost.org
+
+## Windows Installation (boost dependency)
+
+clone https://github.com/Microsoft/vcpkg.git
+
+bootstrap-vcpkg.bat
+
+vcpkg integrate install
+
+vcpkg boost-asio:x64-windows   
 
 ## Issues
 
@@ -21,6 +31,10 @@ add "include/" to include directories
 link with libboost_asio
 
 or use included CMake file for some samples
+
+pair the device
+
+use outbound serial port as connection
 
 ``` c++
 #include <iostream>
@@ -46,9 +60,15 @@ int main()
 			<< acc.data[0].az << std::endl;
 	});
 	f.on_eeg8([](explore::eeg8_packet &&d)->void {
-		for (auto v : d.data.back().data)
-			std::cout << v << '\t';
-		std::cout << std::endl;
+		explore::eeg8_parser ps8;
+		ps8.parse(d);
+
+		for (const auto &r : ps8.values) {
+			std::cout << "packet" << std::endl;
+			for (const auto &v : r)
+				std::cout << v << " ";
+			std::cout << std::endl;
+		}
 	});
 
 	eeg.start();

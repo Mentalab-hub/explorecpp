@@ -1,5 +1,10 @@
 #pragma once
 
+
+#if defined(_MSC_VER)
+#include <SDKDDKVer.h>
+#endif
+
 #include <boost/asio.hpp>
 #include <boost/asio/use_future.hpp>
 #include <boost/asio/deadline_timer.hpp>
@@ -37,16 +42,19 @@ namespace explore {
 			_Socket &operator()() { return socket(); }	
 		};
 
-		class serial_base : public socket_base<boost::asio::serial_port>{
+		class serial_base 
+			: public socket_base<boost::asio::serial_port>{
 		public:
 			explicit serial_base(boost::asio::io_service &io) :socket_base(io) {}
 
 			void open(const std::string &device, boost::system::error_code &err) { ser_.open(device,err); }
 		};
 
-		class tcp_base : public socket_base<boost::asio::ip::tcp::socket>{
+		class tcp_base 
+			: public socket_base<boost::asio::ip::tcp::socket>{
 		public:
-			explicit tcp_base(boost::asio::io_service &io) : socket_base(io) {}
+			explicit tcp_base(boost::asio::io_service &io) 
+				: socket_base(io) {}
 
 			void open(const std::string &device, boost::system::error_code &err) {
 				std::vector<std::string> _res(2);
@@ -57,8 +65,14 @@ namespace explore {
 			}
 		};
 
-	    template<class _Target, class _Parser, size_t _Headersize, size_t _Offset = -1, typename _OffsetType = uint8_t, size_t _Maxsize = 0xffff>
-	    class io_base : private boost::noncopyable {
+	    template<class _Target, 
+			class _Parser, 
+			size_t _Headersize, 
+			size_t _Offset = -1, 
+			typename _OffsetType = uint8_t, 
+			size_t _Maxsize = 0xffff>
+	    class io_base 
+			: private boost::noncopyable {
 		private:
 			boost::asio::io_service io_;
 			std::unique_ptr<_Target> ser_ = nullptr;
@@ -92,32 +106,11 @@ namespace explore {
 					}
 				}
 				if(err){
-					p_.forward_error(err.message());
+					ser_ = nullptr;
+					p_.forward_error("connect error: "+err.message());
 					return false;
 				}
 				return ser_->is_open();
-			}
-
-			// stop & cancel everything, discard serial connection
-			void close() {
-				io_.stop();
-				io_.reset();
-
-				timer_.cancel(); // cancel timer
-				timer_.expires_from_now(boost::posix_time::seconds(0));
-				{
-					std::lock_guard<std::mutex> lock(mut);
-					if(ser_){
-						boost::system::error_code err;
-						try { ser_->cancel(err); }
-						catch (std::runtime_error&) {}
-						ser_->close(err);
-						ser_.reset();
-					}
-				}
-
-				bhead_ = true;
-				buf_.consume(buf_.size());
 			}
 
 			// deadline timer for timeouts
@@ -132,17 +125,10 @@ namespace explore {
 				else timer_.async_wait([this](const boost::system::error_code& error)->void {this->deadline(error); });
 			}
 
-			void read_data() {
-				std::lock_guard<std::mutex> lock(mut);
-				if(!ser_)return;
-				timer_.expires_from_now(boost::posix_time::seconds(read_timeout_));
-				boost::asio::async_read(ser_->socket(), buf_, boost::asio::transfer_exactly(amount()),
-				    [this](const boost::system::error_code &err, const size_t bt)->void {this->read_data_cb(err, bt); });
-			}
-
 			void read_data_cb(const boost::system::error_code &err, const size_t bt) {
 				if (err || bt != amount()) {
 					bhead_ = true;
+					buf_.consume(buf_.size());
 					p_.forward_error(err.message());
 					return;
 				}
@@ -150,18 +136,22 @@ namespace explore {
 					bhead_ = false;
 					const uint8_t *ptr = boost::asio::buffer_cast<const uint8_t*>(buf_.data());
 					const int32_t &end = *reinterpret_cast<const _OffsetType*>(ptr + _Offset);
+					//buf_.consume(bt);
 					if (end < 0 || end > _Maxsize)
 						throw std::runtime_error{ "maxsize limit exceeded" };
 					amount_ = end;
+					io_.post([this]()->void {this->read_data(); });
 				}
 				else {
 					std::istream ibuf(&buf_);
 					buffer_pointer _buf = std::make_unique<byte_buffer>(std::istreambuf_iterator<char>(ibuf), std::istreambuf_iterator<char>{});
-					buf_.consume(bt);
+					buf_.consume(buf_.size());
 					bhead_ = true;
-					p_.parse_packet(std::move(_buf));
+					if (p_.parse_packet(std::move(_buf)))
+						io_.post([this]()->void {this->read_data(); });
+					else
+						io_.reset();
 				}
-				io_.post([this]()->void {this->read_data(); });
 			}
 
 			template<typename _Buffer>
@@ -176,7 +166,10 @@ namespace explore {
 			}
 
 		public:
-			explicit io_base(std::string device, _Parser &p) : device_(std::move(device)), p_(p), amount_(_Headersize),bhead_(true) {
+			explicit io_base(std::string device, _Parser &p) 
+				: device_(std::move(device)), p_(p), 
+				amount_(_Headersize),bhead_(true),
+				buf_(_Maxsize) {
 				buf_.prepare(_Maxsize);
 			}
 			io_base(std::string device, _Parser &&p) = delete;
@@ -198,6 +191,50 @@ namespace explore {
 
 			bool is_running()const noexcept { return brun; }
 
+			void read_data() {
+				std::lock_guard<std::mutex> lock(mut);
+				if (!ser_)return;
+				timer_.expires_from_now(boost::posix_time::seconds(read_timeout_));
+				boost::asio::async_read(ser_->socket(), buf_, boost::asio::transfer_exactly(amount()),
+					[this](const boost::system::error_code &err, const size_t bt)->void {this->read_data_cb(err, bt); });
+			}
+
+			void wait_until(const std::string &delimiter) {
+				std::lock_guard<std::mutex> lock(mut);
+				if (!ser_)return;
+				timer_.expires_from_now(boost::posix_time::seconds(read_timeout_));
+				boost::asio::async_read_until(ser_->socket(), buf_, delimiter,
+					[this](const boost::system::error_code &err, const size_t bt)->void {
+					buf_.consume(bt);
+				});
+			}
+
+			void reset() {
+				io_.reset();
+			}
+
+			// stop & cancel everything, discard serial connection
+			void close() {
+				io_.stop();
+				io_.reset();
+
+				timer_.cancel(); // cancel timer
+				timer_.expires_from_now(boost::posix_time::seconds(0));
+				{
+					std::lock_guard<std::mutex> lock(mut);
+					if (ser_) {
+						boost::system::error_code err;
+						try { ser_->cancel(err); }
+						catch (std::runtime_error&) {}
+						ser_->close(err);
+						ser_.reset();
+					}
+				}
+				p_.forward_connect(false);
+				bhead_ = true;
+				buf_.consume(buf_.size());
+			}
+
 			void start() {
 				if(is_running())return;
 				if(fut_.valid())
@@ -209,18 +246,17 @@ namespace explore {
 							if (connect()) {
 								timer_.expires_at(boost::posix_time::pos_infin);
 								timer_.async_wait([this](const boost::system::error_code& error)->void {this->deadline(error); }); // start timer
+								p_.forward_connect(true);
 								io_.post([this]()->void {read_data(); });
 								io_.run();
 							}
-							else
-								throw std::runtime_error("connection failed");
 						}
-						catch (std::runtime_error&) {
-							close(); // close connection, sleep and retry
-							if (brun) std::this_thread::sleep_for(std::chrono::milliseconds(500));
+						catch (std::runtime_error &err) {
+							p_.forward_error(err.what());
+							if (brun) std::this_thread::sleep_for(std::chrono::milliseconds(100));
 						}
+						close();
 					}
-					stop();
 				});
 			}
 
@@ -231,8 +267,13 @@ namespace explore {
 		};
 	}
 
-	template<class _Parser, size_t _Headersize, size_t _Offset, typename _OffsetType, size_t _Maxsize = 0xffff>
-	class serial_client : private boost::noncopyable {
+	template<class _Parser, 
+		size_t _Headersize, 
+		size_t _Offset, 
+		typename _OffsetType, 
+		size_t _Maxsize = 0xffff>
+	class serial_client 
+		: private boost::noncopyable {
 	private:
 		typedef detail::io_base<detail::serial_base, _Parser, _Headersize, _Offset, _OffsetType, _Maxsize> impl_type;
 		impl_type _impl;
@@ -254,6 +295,11 @@ namespace explore {
 
 		void start() { _impl.start(); }
 		void stop() { _impl.stop(); }
+		void close() { _impl.close(); }
+
+		void reset() { _impl.reset(); }
+
+		void wait_until(const std::string &delimiter) { _impl.wait_until(delimiter); }
 
 		bool is_running()const noexcept { return _impl.is_running(); }
 	};

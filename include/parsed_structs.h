@@ -36,8 +36,8 @@ namespace explore {
 		};
 	};
 
-	typedef std::array<acc_sample, 1> acc_array;
-	typedef packet_base<acc_array> acc_packet;
+	using acc_array = std::array<acc_sample, 1>;
+	using acc_packet = packet_base<acc_array>;
 
 	struct sens_sample {
 		int32_t temperature;
@@ -45,8 +45,8 @@ namespace explore {
 		uint32_t battery;
 	};
 
-	typedef std::array<sens_sample, 1> sens_array;
-	typedef packet_base<sens_array> sens_packet;
+	using sens_array = std::array<sens_sample, 1>;
+	using sens_packet = packet_base<sens_array>;
 
 	template<size_t _Channels>
 	struct eeg_sample {
@@ -58,15 +58,22 @@ namespace explore {
 
 #define EEG_PACKET_SIZE 128
 
-	template<size_t _Channels, size_t _Size = EEG_PACKET_SIZE / _Channels>
-	struct eeg_base : public packet_base<std::array<eeg_sample<_Channels>, _Size>> {
-		typedef eeg_sample<_Channels> sample_type;
+	template<size_t _Channels, 
+		size_t _Size = EEG_PACKET_SIZE / _Channels,
+		typename _Sample = eeg_sample<_Channels>>
+	struct eeg_base 
+		: public packet_base<std::array<_Sample, _Size>> {
+		typedef _Sample sample_type;
 
-		static constexpr size_t channels() { return sample_type::channels(); }
+		float gain = 6.0f;
+		float vref = 4.5f;
+
+		static constexpr size_t channels() { return _Channels; }
+		static constexpr size_t size() { return _Size; }
 	};
 
-	typedef eeg_base<4> eeg4_packet;
-	typedef eeg_base<8> eeg8_packet;
+	using eeg4_packet = eeg_base<4>;
+	using eeg8_packet = eeg_base<8> ;
 
 #pragma pack(pop)
 }
