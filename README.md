@@ -20,9 +20,10 @@ vcpkg integrate install
 
 vcpkg boost-asio:x64-windows   
 
+vcpkg boost-endian:x64-windows  
+
 ## Issues
 
-works on Little Endian systems only (yet)
 
 ## Quickstart
 
