@@ -16,7 +16,7 @@ namespace explore {
 		static constexpr size_t size() { return packet_type::size(); }
 
 		void parse(const packet_type &packet) {
-			const value_type mult = packet.vref / static_cast<value_type>(0x7fffff) * static_cast<value_type>(packet.gain);
+			const value_type mult = packet.vref / static_cast<value_type>(0x7fffff) / static_cast<value_type>(packet.gain);
 			auto it = packet.data.cbegin();
 			for (auto &v : values) {
 				auto vit = it->data.cbegin();
