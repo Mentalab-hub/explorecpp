@@ -89,6 +89,9 @@ namespace explore {
 			case 0x6f:
 				forward_error("shutdown");
 				break;
+			case 0x63:
+				dev_info_data device_info;
+				device_info.firmware_version = ptr->_data.dev_info;
 			default:
 				forward_error("unknown packet id ");
 				break;
