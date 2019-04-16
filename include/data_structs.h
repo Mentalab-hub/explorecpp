@@ -58,4 +58,10 @@ typedef struct
 	data_union _data;
 } eeg_packet;
 
+// device info data
+typedef struct 
+{
+	boost::endian::little_uint32_t firmware_version;
+} dev_info_data;
+
 #pragma pack(pop)
