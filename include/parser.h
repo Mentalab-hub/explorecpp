@@ -59,6 +59,7 @@ namespace explore {
 				break;
 			}
 			case 0x90:
+			case 0xD0:
 				vref = 2.4f;
 			case 0x1e:
 			{
@@ -72,6 +73,7 @@ namespace explore {
 				break;
 			}
 			case 0x92:
+			case 0xD2:
 				vref = 2.4f;
 			case 0x3e:
 			{
