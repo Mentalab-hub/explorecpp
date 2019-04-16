@@ -41,6 +41,12 @@ typedef struct  {
 	boost::endian::little_uint16_t battery;
 } raw_sens_sample;
 
+// firmware version data
+typedef struct {
+	boost::endian::little_uint32_t version;
+} device_info_data;
+
+
 // packet union
 typedef union
 {
@@ -48,6 +54,7 @@ typedef union
 	raw_eeg_sample8 eeg_samples8[16];
 	raw_acc_sample acc_samples[1];
 	raw_sens_sample sens_samples[1];
+	device_info_data dev_info[1];
 } data_union;
 
 // packet definition
@@ -62,6 +69,6 @@ typedef struct
 typedef struct 
 {
 	boost::endian::little_uint32_t firmware_version;
-} dev_info_data;
+} dev_info_packet;
 
 #pragma pack(pop)
