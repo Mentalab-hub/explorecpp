@@ -18,9 +18,9 @@ bootstrap-vcpkg.bat
 
 vcpkg integrate install
 
-vcpkg boost-asio:x64-windows   
+vcpkg install boost-asio:x64-windows   
 
-vcpkg boost-endian:x64-windows  
+vcpkg install boost-endian:x64-windows  
 
 ## Issues
 
