@@ -12,17 +12,23 @@ Boost C++ Libraries http://www.boost.org
 
 ## Windows Installation (boost dependency)
 
-clone https://github.com/Microsoft/vcpkg.git
+clone vcpkg repository from https://github.com/Microsoft/vcpkg.git
 
-bootstrap-vcpkg.bat
+In command prompt, run the following commands:
 
-vcpkg integrate install
+`cd vcpkg`
 
-vcpkg boost-asio:x64-windows   
+`bootstrap-vcpkg.bat`
 
-vcpkg boost-endian:x64-windows  
+`vcpkg integrate install`
+
+`vcpkg install boost-asio:x64-windows`  
+
+`vcpkg install boost-endian:x64-windows`  
+
 
 ## Issues
+
 
 
 ## Quickstart
