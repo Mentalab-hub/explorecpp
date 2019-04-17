@@ -15,7 +15,7 @@ namespace explore {
 		explicit base_parser(_Forward &f) :forward_(f) {}
 		base_parser(_Forward &&f) = delete;
 
-		_Forward &forward(){ return forward_; }
+		_Forward &forward() { return forward_; }
 
 		void forward_error(std::string &&ex) { forward_.on_error(std::forward<std::string>(ex)); }
 
@@ -23,7 +23,7 @@ namespace explore {
 
 		bool parse_packet(buffer_pointer &&buf) {
 			const eeg_packet *ptr = reinterpret_cast<const eeg_packet*>(buf->data());
-			const size_t datasize = buf->size()-sizeof(eeg_header)-sizeof(eeg_packet::timestamp)-4;
+			const size_t datasize = buf->size() - sizeof(eeg_header) - sizeof(eeg_packet::timestamp) - 4;
 
 			float vref = 4.5f;
 
@@ -89,6 +89,11 @@ namespace explore {
 			case 0x6f:
 				forward_error("shutdown");
 				break;
+			case 0x63:
+				dev_info_packet device_info;
+				device_info.version = ptr->_data.dev_info->version;
+				forward_.on_info(std::move(device_info));
+				break;
 			default:
 				forward_error("unknown packet id ");
 				break;
@@ -97,8 +102,8 @@ namespace explore {
 		}
 
 	private:
-		template<typename _Packet,typename _Datatype>
-		void parse_eeg_packet(_Packet &eeg,const _Datatype &d) {
+		template<typename _Packet, typename _Datatype>
+		void parse_eeg_packet(_Packet &eeg, const _Datatype &d) {
 			for (size_t n = 0; n < eeg.size(); ++n) {
 				auto &smp = eeg.data[n];
 				for (size_t i = 0; i < eeg.channels(); ++i)

@@ -18,7 +18,7 @@ typedef struct {
 } eeg_header;
 
 // 4 channel eeg data type
-typedef struct{
+typedef struct {
 	boost::endian::little_int24_t status;
 	boost::endian::little_int24_t data[4];
 } raw_eeg_sample4;
@@ -35,27 +35,40 @@ typedef struct {
 } raw_acc_sample;
 
 // sensors data type
-typedef struct  {
+typedef struct {
 	int8_t temperature;
 	boost::endian::little_uint16_t light;
 	boost::endian::little_uint16_t battery;
 } raw_sens_sample;
 
+// firmware version data
+typedef struct {
+	boost::endian::little_uint32_t version;
+} raw_device_info;
+
+
 // packet union
 typedef union
 {
-	raw_eeg_sample4 eeg_samples4[32];
+	raw_eeg_sample4 eeg_samples4[33];
 	raw_eeg_sample8 eeg_samples8[16];
 	raw_acc_sample acc_samples[1];
 	raw_sens_sample sens_samples[1];
+	raw_device_info dev_info[1];
 } data_union;
 
 // packet definition
-typedef struct 
+typedef struct
 {
 	eeg_header head;
 	boost::endian::little_uint32_t timestamp;
 	data_union _data;
 } eeg_packet;
+
+// device info data
+typedef struct
+{
+	boost::endian::little_uint32_t version;
+} dev_info_packet;
 
 #pragma pack(pop)

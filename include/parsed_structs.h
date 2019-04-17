@@ -48,6 +48,13 @@ namespace explore {
 	using sens_array = std::array<sens_sample, 1>;
 	using sens_packet = packet_base<sens_array>;
 
+	struct dev_info_packet {
+		uint32_t version;
+	};
+
+	//using dev_info_array = std::array<dev_info, 1>;
+	//using dev_info_packet = packet_base<dev_info_array>;
+
 	template<size_t _Channels>
 	struct eeg_sample {
 		int32_t status;
@@ -56,12 +63,12 @@ namespace explore {
 		static constexpr size_t channels() { return _Channels; }
 	};
 
-#define EEG_PACKET_SIZE 128
+#define EEG_PACKET_SIZE 132
 
-	template<size_t _Channels, 
+	template<size_t _Channels,
 		size_t _Size = EEG_PACKET_SIZE / _Channels,
 		typename _Sample = eeg_sample<_Channels>>
-	struct eeg_base 
+		struct eeg_base
 		: public packet_base<std::array<_Sample, _Size>> {
 		typedef _Sample sample_type;
 
@@ -73,7 +80,7 @@ namespace explore {
 	};
 
 	using eeg4_packet = eeg_base<4>;
-	using eeg8_packet = eeg_base<8> ;
+	using eeg8_packet = eeg_base<8>;
 
 #pragma pack(pop)
 }
