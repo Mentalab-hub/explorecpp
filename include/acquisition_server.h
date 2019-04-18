@@ -109,6 +109,10 @@ public:
 			.append_child_value("unit", "volts")
 			.append_child_value("type", "EEG");
 	}
+	void on_info(explore::dev_info_packet &&info) {
+				std::cout << "Firmware version: "
+					<< info.version << std::endl;
+	};
 };
 
 
