@@ -4,13 +4,19 @@ Simple Sample C++ library to talk to Mentalab biosignal aquisition devices
 
 ## Prequesites:
 
-GCC 4.9.1 or higher (using --std=c++1y )
-
-Microsoft Visual Studio 2015 or highter
-
 Boost C++ Libraries http://www.boost.org
 
+Ubuntu: GCC 4.9.1 or higher (using --std=c++1y )
+
+Windows: Microsoft Visual Studio 2015 or highter
+
+
+
 ## Windows Installation (boost dependency)
+
+Read a detailed installation guide [here](https://github.com/Mentalab-hub/libexplorecpp/blob/master/windows_installation.md).
+
+#### Quick guide
 
 clone vcpkg repository from https://github.com/Microsoft/vcpkg.git
 
@@ -27,7 +33,8 @@ In command prompt, run the following commands:
 `vcpkg install boost-endian:x64-windows`  
 
 
-## Issues
+## Labstreaminglayer integration
+It is possible to set up a [labstreaminglayer (LSL)](https://github.com/sccn/labstreaminglayer) connection in order to send data acquired by C++ API to other environments such as Matlab, Openvibe, C#, Python, etc.. Follow [this instruction](https://github.com/Mentalab-hub/libexplorecpp/blob/master/lsl_integration.md) for lsl setup.
 
 
 
