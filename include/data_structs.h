@@ -43,8 +43,21 @@ typedef struct {
 
 // firmware version data
 typedef struct {
-	boost::endian::little_uint32_t version;
+	boost::endian::little_uint16_t version;
+	boost::endian::little_uint8_t datarate;
+	boost::endian::little_uint8_t mask;
 } raw_device_info;
+
+// marker data
+typedef struct {
+	boost::endian::little_uint8_t counter;
+} raw_marker;
+
+// calib data
+typedef struct {
+	boost::endian::little_uint8_t slope;
+	boost::endian::little_uint8_t offset;
+} raw_calib_info;
 
 
 // packet union
@@ -55,6 +68,8 @@ typedef union
 	raw_acc_sample acc_samples[1];
 	raw_sens_sample sens_samples[1];
 	raw_device_info dev_info[1];
+	raw_marker marker_info[1];
+	raw_calib_info calib_infos[1];
 } data_union;
 
 // packet definition
@@ -65,10 +80,13 @@ typedef struct
 	data_union _data;
 } eeg_packet;
 
+/*
 // device info data
 typedef struct
 {
 	boost::endian::little_uint32_t version;
 } dev_info_packet;
+*/
+
 
 #pragma pack(pop)

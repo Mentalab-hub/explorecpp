@@ -40,25 +40,46 @@ namespace explore {
 	using acc_packet = packet_base<acc_array>;
 
 	struct sens_sample {
-		int32_t temperature;
-		uint32_t light;
-		uint32_t battery;
+		double_t temperature;
+		double_t light;
+		double_t battery;
 	};
 
 	using sens_array = std::array<sens_sample, 1>;
 	using sens_packet = packet_base<sens_array>;
 
-	struct dev_info_packet {
-		uint32_t version;
+	struct devinfo_packet {
+		uint16_t version;
+		uint16_t datarate;
+		uint16_t mask;
 	};
 
-	//using dev_info_array = std::array<dev_info, 1>;
-	//using dev_info_packet = packet_base<dev_info_array>;
+	//using devinfo_array = std::array<dev_info, 1>;
+	//using devinfo_packet = packet_base<dev_info_array>;
+
+	/*
+	struct marker_sample {
+		uint32_t counter;
+	};
+
+	using marker_array = std::array<marker_sample, 1>;
+	using marker_packet = packet_base<marker_array>;
+	*/
+	struct marker_packet {
+		uint32_t counter;
+	};
+
+	struct calib_info {
+		int32_t offset;
+		int32_t slope;
+	};
+	using calib_array = std::array<calib_info, 1>;
+	using calib_info_packet = packet_base<calib_array>;
 
 	template<size_t _Channels>
 	struct eeg_sample {
 		int32_t status;
-		std::array<int32_t, _Channels> data;
+		std::array<double_t, _Channels> data;
 
 		static constexpr size_t channels() { return _Channels; }
 	};
