@@ -66,7 +66,9 @@ namespace explore {
 		_Base<eeg4_packet> on_eeg4;
 		_Base<eeg8_packet> on_eeg8;
 		_Base<acc_packet> on_acc;
-		_Base<dev_info_packet> on_info;
+		_Base<devinfo_packet> on_info;
+		_Base<marker_packet> on_marker;
+		_Base<calib_info_packet> on_calib_info;
 	};
 
 	// simple skeleton sample forward class template
@@ -78,6 +80,8 @@ namespace explore {
 		void on_eeg4(eeg4_packet &&data) {}
 		void on_eeg8(eeg8_packet &&data) {}
 		void on_acc(acc_packet &&data) {}
-		void on_info(dev_info_packet &&data) {}
+		void on_info(devinfo_packet &&data) {}
+		void on_marker(marker_packet&& data) {}
+		void on_calib_info(calib_info_packet&& data) {}
 	};
 }
