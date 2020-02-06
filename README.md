@@ -48,8 +48,7 @@ or use included CMake file for some samples
 
 pair the device
 
-use outbound serial port as connection
-
+use outbound serial port as connection, you can find the port devoted to the paired device connection from windows Bluetooth and other devices setting> more Bluetooth setting> COM Ports. Use the Outgoing serial COM port in your code to communicate with device.  
 ``` c++
 #include "include/explore.h"
 #include <stdio.h>
@@ -102,10 +101,18 @@ int main()
 			std::cout << std::endl;
 		}
 	});
-	f.on_info([](explore::dev_info_packet &&info)->void {
-		std::cout << "Firmware version: "
-			<< info.version << std::endl;
-	});
+	f.on_info([](explore::devinfo_packet&& info)->void {
+        std::cout << "Firmware version: "
+            << info.version << '\t'
+            << "datarate:" << '\t'
+            << info.datarate << '\t'
+            << "mask:" << '\t'
+            << info.mask << std::endl;
+        });
+    f.on_marker([](explore::marker_packet&& msg)->void {
+        std::cout << "Marker counter: "
+            << msg.counter << std::endl;
+        });
 
 	eeg.start();
 
